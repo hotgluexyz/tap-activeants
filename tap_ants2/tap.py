@@ -4,8 +4,9 @@ from __future__ import annotations
 import os
 import pandas as pd
 import requests
+import json
 from singer_sdk import Tap, typing as th  # JSON schema typing helpers
-from tap_ants2.client import ProductsStream, OrdersStream
+from tap_ants2.client import ProductsStream, OrdersStream, OrderDetailsStream
 
 class TapAnts2(Tap):
     """Ants2 tap class."""
@@ -66,14 +67,26 @@ class TapAnts2(Tap):
         return [
             ProductsStream(self),
             OrdersStream(self),
+            OrderDetailsStream(self),
         ]
 
-    def post_sync(self):
-        """Custom logic after sync to save CSV files."""
-        self._sync_stream_to_csv("products", "output/products.csv")
-        self._sync_stream_to_csv("orders", "output/orders.csv")
+    def transform_record(self, record, schema):
+        """Transform record to match the schema."""
+        flattened_record = {}
+        for field in schema:
+            keys = field.split(".")
+            value = record
+            for key in keys:
+                value = value.get(key) if value else None
+            flattened_record[field] = value
+        return flattened_record
 
-    def _sync_stream_to_csv(self, stream_name, output_file):
+    def sync_all_to_csv(self):
+        self._sync_stream_to_csv("products", "output/products.csv", self.PRODUCTS_SCHEMA)
+        self._sync_stream_to_csv("orders", "output/orders.csv", self.ORDERS_SCHEMA)
+        self._sync_order_details_to_csv()
+
+    def _sync_stream_to_csv(self, stream_name, output_file, schema):
         print(f"Starting sync for stream: {stream_name} to file: {output_file}")
         streams = self.streams
         records = []
@@ -88,8 +101,9 @@ class TapAnts2(Tap):
                 return
 
             print(f"Fetched {len(records)} records for stream: {stream_name}")
+            transformed_records = [self.transform_record(record, schema) for record in records]
 
-            df = pd.DataFrame(records)
+            df = pd.DataFrame(transformed_records)
             print(f"Data frame created with {df.shape[0]} rows and {df.shape[1]} columns.")
 
             output_dir = os.path.dirname(output_file)
@@ -106,7 +120,48 @@ class TapAnts2(Tap):
         except Exception as e:
             print(f"An error occurred during syncing: {e}")
 
+    def _sync_order_details_to_csv(self):
+        print("Starting sync for order details to file: output/order_details.csv")
+        order_details = []
+        token = self.config["token"]
+        api_url = self.config["api_url"]
+        orders_stream = self.streams["orders"]
+        orders = list(orders_stream.get_records(context=None))
+
+        for order in orders:
+            order_id = order.get("id")
+            if order_id:
+                details = self._fetch_order_details(order_id, token, api_url)
+                order_details.append(self.transform_record(details, self.ORDER_DETAILS_SCHEMA))
+
+        df = pd.DataFrame(order_details)
+        output_dir = "output"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            print(f"Created directory: {output_dir}")
+        else:
+            print(f"Directory already exists: {output_dir}")
+
+        df.to_csv("output/order_details.csv", index=False)
+        print("Data for order details saved to output/order_details.csv")
+
+    def _fetch_order_details(self, order_id, token, api_url):
+        """Fetch order details using the order ID."""
+        url = f"{api_url}/v3/orders/{order_id}"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json().get('data', {})
+
 if __name__ == "__main__":
-    tap = TapAnts2()
-    tap.run_sync()
-    tap.post_sync()
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config_tap_ants2.json')
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+
+    tap_instance = TapAnts2(config=config)
+    tap_instance.run_sync()
+    tap_instance.sync_all_to_csv()
+

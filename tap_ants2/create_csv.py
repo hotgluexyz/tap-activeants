@@ -9,10 +9,10 @@ from datetime import datetime, timedelta
 from collections.abc import MutableMapping
 
 # Adding the current directory to the Python path to ensure module imports work
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'tap_ants2'))
 
-from tap_ants2.client import ProductsStream, OrdersStream
-from tap_ants2.tap import TapAnts2
+from client import ProductsStream, OrdersStream
+from tap import TapAnts2
 
 def flatten_dict(d, parent_key='', sep='.'):
     """Flatten a nested dictionary."""
@@ -25,7 +25,22 @@ def flatten_dict(d, parent_key='', sep='.'):
             items.append((new_key, v))
     return dict(items)
 
-def fetch_and_save_csv(stream_class, stream_name, output_file, tap_instance):
+def fetch_order_details(order_id, token, api_url):
+    """Fetch order details using the order ID."""
+    try:
+        url = f"{api_url}/v3/orders/{order_id}"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json().get('data', {})
+    except requests.exceptions.HTTPError as err:
+        print(f"HTTP error occurred: {err}")
+        return {}
+
+def fetch_and_save_csv(stream_class, stream_name, output_file, tap_instance, api_url):
     """Fetch data from stream and save it to a CSV file."""
     print(f"Fetching data for stream: {stream_name}...")
     stream = stream_class(tap_instance)
@@ -47,6 +62,21 @@ def fetch_and_save_csv(stream_class, stream_name, output_file, tap_instance):
 
     df.to_csv(output_file, index=False)
     print(f"Data for stream {stream_name} saved to {output_file}")
+
+    if stream_name == "orders":
+        order_details = []
+        token = tap_instance.config["token"]
+        for record in records:
+            order_id = record.get("id")
+            if order_id:
+                details = fetch_order_details(order_id, token, api_url)
+                if details:
+                    order_details.append(flatten_dict(details))
+        if order_details:
+            order_details_df = pd.DataFrame(order_details)
+            order_details_output_file = "output/order_details.csv"
+            order_details_df.to_csv(order_details_output_file, index=False)
+            print(f"Order details saved to {order_details_output_file}")
 
 def update_config_with_token(config_path, token, expires_in):
     """Update the config.json with the token and its expiration date."""
@@ -85,7 +115,7 @@ def is_token_valid(expiration_time):
     return datetime.fromisoformat(expiration_time) > datetime.now()
 
 if __name__ == "__main__":
-    config_path = "config.json"
+    config_path = os.path.join(os.path.dirname(__file__), '../config_tap_ants2.json')
     with open(config_path, 'r') as f:
         config = json.load(f)
 
@@ -99,7 +129,7 @@ if __name__ == "__main__":
     tap_instance = TapAnts2(config=config)
 
     # Fetch and save Products data
-    fetch_and_save_csv(ProductsStream, "products", "output/products.csv", tap_instance)
+    fetch_and_save_csv(ProductsStream, "products", "output/products.csv", tap_instance, config["api_url"])
 
-    # Fetch and save Orders data
-    fetch_and_save_csv(OrdersStream, "orders", "output/orders.csv", tap_instance)
+    # Fetch and save Orders data, along with order details
+    fetch_and_save_csv(OrdersStream, "orders", "output/orders.csv", tap_instance, config["api_url"])

@@ -82,3 +82,40 @@ class OrdersStream(ActiveAntsStream):
         th.Property("included", th.ArrayType(th.ObjectType()), nullable=True),
         th.Property("links", th.ObjectType(), nullable=True)
     ).to_dict()
+
+class OrderDetailsStream(ActiveAntsStream):
+    """Define custom stream for order details."""
+    name = "order_details"
+    primary_keys = ["id"]
+    replication_key = None
+    schema = th.PropertiesList(
+        th.Property("id", th.IntegerType),
+        th.Property("type", th.StringType),
+        th.Property("attributes", th.ObjectType(
+            th.Property("sku", th.StringType),
+            th.Property("quantity", th.IntegerType),
+            th.Property("price", th.NumberType),
+            th.Property("vat", th.NumberType),
+            th.Property("name", th.StringType)
+        )),
+        th.Property("relationships", th.ObjectType(), nullable=True),
+        th.Property("included", th.ObjectType(), nullable=True),
+        th.Property("links", th.ObjectType(), nullable=True)
+    ).to_dict()
+
+    def get_records(self, context):
+        orders_stream = self._tap.streams["orders"]
+        orders = list(orders_stream.get_records(context=context))
+        records = []
+
+        for order in orders:
+            order_id = order.get("id")
+            if order_id:
+                url = f"{self.url_base}/v3/orders/{order_id}"
+                headers = self.http_headers
+                response = requests.get(url, headers=headers)
+                response.raise_for_status()
+                data = response.json().get('data', {})
+                records.append(data)
+
+        return records
