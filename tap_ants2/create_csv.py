@@ -8,11 +8,13 @@ import requests
 from datetime import datetime, timedelta
 from collections.abc import MutableMapping
 
+
 # Adding the current directory to the Python path to ensure module imports work
 sys.path.append(os.path.join(os.path.dirname(__file__), 'tap_ants2'))
 
-from client import ProductsStream, OrdersStream
-from tap import TapAnts2
+from tap_ants2.client import ProductsStream, OrdersStream
+from tap_ants2.tap import TapAnts2
+
 
 def flatten_dict(d, parent_key='', sep='.'):
     """Flatten a nested dictionary."""
@@ -115,7 +117,7 @@ def is_token_valid(expiration_time):
     return datetime.fromisoformat(expiration_time) > datetime.now()
 
 if __name__ == "__main__":
-    config_path = os.path.join(os.path.dirname(__file__), '../config_tap_ants2.json')
+    config_path = os.path.join(os.path.dirname(__file__), '../../config_tap_ants2.json')
     with open(config_path, 'r') as f:
         config = json.load(f)
 
