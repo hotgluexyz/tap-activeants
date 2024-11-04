@@ -1,0 +1,12 @@
+{
+    "username": "kleir_apitest",
+    "password": "DnmEBUfZAHk9ejtQ6CTRxp",
+    "project_ids": [
+        "project_id_1",
+        "project_id_2"
+    ],
+    "start_date": "2021-01-01T00:00:00Z",
+    "api_url": "https://shopapitest.activeants.nl",
+    "token": "YyLfKcvEbPExbcnBxk2xVpFL91m35lT6IKM_J02daHUWpfxVR3jG3ywp6GvLR97_Na1rhFIaOL8-_alPeNTisOekymLr__tDxApzEXEHbNJn2qxtnRt8vBlOmjzz4fYhoeE_rhByOmzOpIIx2jr9GQUadgA5gVJXSx-p6naw_-xAzLmUUMZe8JLt24Ae4VOcVJ0bNRszP8v0o5wb8zWONLAHfHrPcD1jKjqt2WIAn39QJQyU_xo0KemLYw6XxJs9nwLgGPpgyPfOiLwKYyq53oTTIKAoPf_64EMrZDD1tzdnfG-H8-eRkcGsChUCm1TByEmSZQqyOWgQSFNhlSio9khzlXHVBBpvdaX_bFyuAwOpIlV9AwgTBlY-B9b4aJd1BHsx-FHufUwiy-rc0aAyN_jXpiI9F7hbDezKRAKOIrdMj93RUihk3tJkLw3qdSXT89-H6Uu9ZqSTcd0HZWQYk-H9fiX3ysIp7zbO3FHObxBSchjdF5e64USsexxg2GHWisBMZT8fDZXavr-mkH8GoYe9zGzSnTJVtM2YXij-sQA",
+    "token_expires_at": "2024-11-05T03:05:46.371779"
+}
