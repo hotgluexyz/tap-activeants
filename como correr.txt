@@ -1,3 +1,0 @@
-poetry run tap-ants2 --config ../../config_tap_ants2.json
-
-poetry run python create_csv.py
