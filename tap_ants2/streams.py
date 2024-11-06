@@ -1,8 +1,29 @@
+
+import requests
 from singer_sdk import typing as th  # JSON Schema typing helpers
-from tap_activeants.client import ActiveAntsStream
+from singer_sdk.streams import RESTStream
+
+class ActiveAntsStream(RESTStream):
+    @property
+    def url_base(self) -> str:
+        return self.config["api_url"]
+    
+    @property
+    def http_headers(self) -> dict:
+        token = self._tap.get_token()
+        headers = super().http_headers
+        headers["Authorization"] = f"Bearer {token}"
+        return headers
+
+    def get_records(self, context):
+        url = self.get_url(context)
+        headers = self.http_headers
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json().get('data', [])
+        return data
 
 class ProductsStream(ActiveAntsStream):
-    """Define custom stream for products."""
     name = "products"
     path = "/v3/products"
     primary_keys = ["id"]
@@ -30,12 +51,15 @@ class ProductsStream(ActiveAntsStream):
             th.Property("hsCodes", th.ArrayType(th.ObjectType(
                 th.Property("country", th.StringType),
                 th.Property("hsCode", th.StringType)
-            )))
-        ))
+            ))),
+            th.Property("description", th.StringType, nullable=True),
+            th.Property("metadata", th.ObjectType(), nullable=True)
+        )),
+        th.Property("relationships", th.ObjectType(), nullable=True),
+        th.Property("links", th.ObjectType(), nullable=True)
     ).to_dict()
 
 class OrdersStream(ActiveAntsStream):
-    """Define custom stream for orders."""
     name = "orders"
     path = "/v3/orders"
     primary_keys = ["id"]
@@ -52,5 +76,44 @@ class OrdersStream(ActiveAntsStream):
             th.Property("preferredShippingDate", th.DateTimeType),
             th.Property("allowPartialDelivery", th.BooleanType),
             th.Property("onHold", th.BooleanType)
-        ))
+        )),
+        th.Property("relationships", th.ObjectType(), nullable=True),
+        th.Property("included", th.ArrayType(th.ObjectType()), nullable=True),
+        th.Property("links", th.ObjectType(), nullable=True)
     ).to_dict()
+
+class OrderDetailsStream(ActiveAntsStream):
+    name = "order_details"
+    primary_keys = ["id"]
+    replication_key = None
+    schema = th.PropertiesList(
+        th.Property("id", th.IntegerType),
+        th.Property("type", th.StringType),
+        th.Property("attributes", th.ObjectType(
+            th.Property("sku", th.StringType),
+            th.Property("quantity", th.IntegerType),
+            th.Property("price", th.NumberType),
+            th.Property("vat", th.NumberType),
+            th.Property("name", th.StringType)
+        )),
+        th.Property("relationships", th.ObjectType(), nullable=True),
+        th.Property("included", th.ObjectType(), nullable=True),
+        th.Property("links", th.ObjectType(), nullable=True)
+    ).to_dict()
+
+    def get_records(self, context):
+        orders_stream = self._tap.streams["orders"]
+        orders = list(orders_stream.get_records(context=context))
+        records = []
+
+        for order in orders:
+            order_id = order.get("id")
+            if order_id:
+                url = f"{self.url_base}/v3/orders/{order_id}"
+                headers = self.http_headers
+                response = requests.get(url, headers=headers)
+                response.raise_for_status()
+                data = response.json().get('data', {})
+                records.append(data)
+
+        return records

@@ -12,7 +12,7 @@ from collections.abc import MutableMapping
 # Adding the current directory to the Python path to ensure module imports work
 sys.path.append(os.path.join(os.path.dirname(__file__), 'tap_ants2'))
 
-from tap_ants2.client import ProductsStream, OrdersStream
+from tap_ants2.streams import ProductsStream, OrdersStream
 from tap_ants2.tap import TapAnts2
 
 
