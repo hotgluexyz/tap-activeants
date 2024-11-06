@@ -12,7 +12,7 @@ from collections.abc import MutableMapping
 # Adding the current directory to the Python path to ensure module imports work
 sys.path.append(os.path.join(os.path.dirname(__file__), 'tap_ants2'))
 
-from tap_ants2.streams import ProductsStream, OrdersStream
+from tap_ants2.streams import ProductsStream, OrdersStream, OrderItemsStream
 from tap_ants2.tap import TapAnts2
 
 
@@ -135,3 +135,6 @@ if __name__ == "__main__":
 
     # Fetch and save Orders data, along with order details
     fetch_and_save_csv(OrdersStream, "orders", "output/orders.csv", tap_instance, config["api_url"])
+
+# Fetch and save Order Items data
+fetch_and_save_csv(OrderItemsStream, "order_items", "output/order_items.csv", tap_instance, config["api_url"])

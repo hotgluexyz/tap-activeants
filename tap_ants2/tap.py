@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 import json
 from singer_sdk import Tap, typing as th  # JSON schema typing helpers
-from tap_ants2.streams import ProductsStream, OrdersStream, OrderDetailsStream
+from tap_ants2.streams import ProductsStream, OrdersStream, OrderDetailsStream, OrderItemsStream
 
 class TapAnts2(Tap):
     """Ants2 tap class."""
@@ -68,6 +68,7 @@ class TapAnts2(Tap):
             ProductsStream(self),
             OrdersStream(self),
             OrderDetailsStream(self),
+            OrderItemsStream(self),
         ]
 
     def transform_record(self, record, schema):

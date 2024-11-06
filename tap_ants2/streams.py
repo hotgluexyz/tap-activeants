@@ -1,7 +1,7 @@
 
 import requests
-from singer_sdk import typing as th  # JSON Schema typing helpers
 from singer_sdk.streams import RESTStream
+from singer_sdk import typing as th  # JSON Schema typing helpers
 
 class ActiveAntsStream(RESTStream):
     @property
@@ -51,9 +51,7 @@ class ProductsStream(ActiveAntsStream):
             th.Property("hsCodes", th.ArrayType(th.ObjectType(
                 th.Property("country", th.StringType),
                 th.Property("hsCode", th.StringType)
-            ))),
-            th.Property("description", th.StringType, nullable=True),
-            th.Property("metadata", th.ObjectType(), nullable=True)
+            )))
         )),
         th.Property("relationships", th.ObjectType(), nullable=True),
         th.Property("links", th.ObjectType(), nullable=True)
@@ -116,4 +114,51 @@ class OrderDetailsStream(ActiveAntsStream):
                 data = response.json().get('data', {})
                 records.append(data)
 
+        return records
+
+class OrderItemsStream(ActiveAntsStream):
+    name = "order_items"
+    primary_keys = ["id"]
+    replication_key = None
+    schema = th.PropertiesList(
+        th.Property("id", th.IntegerType),
+        th.Property("type", th.StringType),
+        th.Property("attributes", th.ObjectType(
+            th.Property("sku", th.StringType),
+            th.Property("quantity", th.IntegerType),
+            th.Property("price", th.NumberType),
+            th.Property("vat", th.NumberType),
+            th.Property("name", th.StringType)
+        )),
+        th.Property("relationships", th.ObjectType(
+            th.Property("order", th.ObjectType(
+                th.Property("data", th.ObjectType(
+                    th.Property("id", th.IntegerType),
+                    th.Property("type", th.StringType),
+                    th.Property("links", th.ObjectType(
+                        th.Property("self", th.StringType)
+                    ))
+                ))
+            ))
+        ), nullable=True),
+        th.Property("links", th.ObjectType(), nullable=True)
+    ).to_dict()
+
+    def get_records(self, context):
+        order_details_stream = self._tap.streams["order_details"]
+        order_details_records = list(order_details_stream.get_records(context=context))
+        
+        records = []
+        for order_detail in order_details_records:
+            order_items = order_detail.get("relationships", {}).get("orderItems", {}).get("data", [])
+            for item in order_items:
+                item_id = item.get("id")
+                if item_id:
+                    url = f"{self.url_base}/v3/orderitems/{item_id}"
+                    headers = self.http_headers
+                    response = requests.get(url, headers=headers)
+                    response.raise_for_status()
+                    data = response.json().get('data', {})
+                    records.append(data)
+                    
         return records
