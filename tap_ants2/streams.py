@@ -47,14 +47,14 @@ class ProductsStream(ActiveAntsStream):
             th.Property("hasExpirationDate", th.BooleanType),
             th.Property("expirationDateMargin", th.IntegerType),
             th.Property("expirationDateWarning", th.IntegerType),
-            th.Property("countryOfOrigin", th.StringType, nullable=True),
+            th.Property("countryOfOrigin", th.StringType),
             th.Property("hsCodes", th.ArrayType(th.ObjectType(
                 th.Property("country", th.StringType),
                 th.Property("hsCode", th.StringType)
             )))
         )),
-        th.Property("relationships", th.ObjectType(), nullable=True),
-        th.Property("links", th.ObjectType(), nullable=True)
+        th.Property("relationships", th.ObjectType()),
+        th.Property("links", th.ObjectType())
     ).to_dict()
 
 class OrdersStream(ActiveAntsStream):
@@ -75,9 +75,9 @@ class OrdersStream(ActiveAntsStream):
             th.Property("allowPartialDelivery", th.BooleanType),
             th.Property("onHold", th.BooleanType)
         )),
-        th.Property("relationships", th.ObjectType(), nullable=True),
-        th.Property("included", th.ArrayType(th.ObjectType()), nullable=True),
-        th.Property("links", th.ObjectType(), nullable=True)
+        th.Property("relationships", th.ObjectType()),
+        th.Property("included", th.ArrayType(th.ObjectType())),
+        th.Property("links", th.ObjectType())
     ).to_dict()
 
 class OrderDetailsStream(ActiveAntsStream):
@@ -94,9 +94,9 @@ class OrderDetailsStream(ActiveAntsStream):
             th.Property("vat", th.NumberType),
             th.Property("name", th.StringType)
         )),
-        th.Property("relationships", th.ObjectType(), nullable=True),
-        th.Property("included", th.ObjectType(), nullable=True),
-        th.Property("links", th.ObjectType(), nullable=True)
+        th.Property("relationships", th.ObjectType()),
+        th.Property("included", th.ArrayType(th.ObjectType())),
+        th.Property("links", th.ObjectType())
     ).to_dict()
 
     def get_records(self, context):
@@ -140,8 +140,8 @@ class OrderItemsStream(ActiveAntsStream):
                     ))
                 ))
             ))
-        ), nullable=True),
-        th.Property("links", th.ObjectType(), nullable=True)
+        )),
+        th.Property("links", th.ObjectType())
     ).to_dict()
 
     def get_records(self, context):

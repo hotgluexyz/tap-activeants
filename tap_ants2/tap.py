@@ -1,11 +1,10 @@
 """Ants2 tap class."""
 
-from __future__ import annotations
 import os
 import pandas as pd
 import requests
-import json
 from singer_sdk import Tap, typing as th  # JSON schema typing helpers
+
 from tap_ants2.streams import ProductsStream, OrdersStream, OrderDetailsStream, OrderItemsStream
 
 class TapAnts2(Tap):
@@ -18,13 +17,11 @@ class TapAnts2(Tap):
             "username",
             th.StringType,
             required=True,
-            secret=True,  # Flag config as protected.
         ),
         th.Property(
             "password",
             th.StringType,
             required=True,
-            secret=True,
         ),
         th.Property(
             "project_ids",
@@ -59,7 +56,7 @@ class TapAnts2(Tap):
             TapAnts2._token = response.json().get("access_token")
         return TapAnts2._token
 
-    def discover_streams(self) -> list[RESTStream]:
+    def discover_streams(self) -> list:
         """Return a list of discovered streams.
         Returns:
             A list of discovered streams.
@@ -158,11 +155,5 @@ class TapAnts2(Tap):
         return response.json().get('data', {})
 
 if __name__ == "__main__":
-    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config_tap_ants2.json')
-    with open(config_path, 'r') as f:
-        config = json.load(f)
-
-    tap_instance = TapAnts2(config=config)
-    tap_instance.run_sync()
-    tap_instance.sync_all_to_csv()
+    TapAnts2.cli()
 
