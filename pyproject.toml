@@ -11,6 +11,8 @@ keywords = [
 classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -20,9 +22,10 @@ classifiers = [
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = ">=3.9"
-singer-sdk = { version="~=0.41.0", extras = [] }
+python = ">=3.7"
+singer-sdk = { version="~=0.5.0", extras = [] }
 fs-s3fs = { version = "~=1.1.1", optional = true }
+requests = "~=2.25.1"
 pandas = "^2.2.3"
 
 [tool.poetry.group.dev.dependencies]
@@ -36,11 +39,11 @@ s3 = ["fs-s3fs"]
 addopts = '--durations=10'
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.7"
 warn_unused_configs = true
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py38"
 
 [tool.ruff.lint]
 ignore = [
