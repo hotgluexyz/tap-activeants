@@ -24,11 +24,6 @@ class TapAnts2(Tap):
             required=True,
         ),
         th.Property(
-            "project_ids",
-            th.ArrayType(th.StringType),
-            required=True,
-        ),
-        th.Property(
             "start_date",
             th.DateTimeType,
         ),

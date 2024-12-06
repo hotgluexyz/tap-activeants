@@ -67,3 +67,4 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 # CLI declaration
 tap-ants2 = 'tap_ants2.tap:TapAnts2.cli'
+tap-activeants = 'tap_ants2.tap:TapAnts2.cli'
